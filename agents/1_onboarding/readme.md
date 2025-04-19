@@ -6,6 +6,10 @@
 
 # Changelog
 Daniel (18/04):
+- Se cambio el enfoque de invocación de las funciones de logic apps. Ahora se hace por OpenApi, dado que con el enfoque de custom functions, estas solo son ejecutables en el runtime del creador del agente (dónde se define su implementación), pero para otro agente u orquestador esta implementación sería desconocida.
+- Con el cambio anterior, ahora este agente puede ser testeado en el playground de AI Foundry y también invocado (con todas sus funciones) desde un orquestador, como por ejemplo el Semantic Kernel, sin necesidad de re-implementar las funciones en el kernel (plugins).
+
+Daniel (18/04):
 - Se agregó la carpeta de agents, para organizar los agentes
 - Se agregó el agente 1, el cual tiene como responsabilidad realizar el onboarding a la app, registrando las cuentas y categorías que se utilizarán en el registro de transacciones
 - Se agregaron las funciones de record_account y record_category para realizar la creación de registros en la base de datos (usando logic apps)

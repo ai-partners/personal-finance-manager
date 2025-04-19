@@ -1,0 +1,135 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "record_category_logic_app",
+    "description": "Logic App qu permite la creación de categorías en la base de datos",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://prod-61.eastus2.logic.azure.com:443"
+    }
+  ],
+  "paths": {
+    "/workflows/cd70a94f3daf4219810fc664963552eb/triggers/Trigger1/paths/invoke": {
+      "post": {
+        "description": "Registra una categoría de ingreso o gasto en la tabla de categorías.",
+        "operationId": "record_category_logic_app",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "2016-10-01"
+            },
+            "description": "Versión de la API"
+          },
+          {
+            "name": "sp",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "/triggers/Trigger1/run"
+            },
+            "description": "Desencadenador"
+          },
+          {
+            "name": "sv",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "1.0"
+            },
+            "description": "Versión del servicio"
+          },
+          {
+            "name": "sig",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "pliuTMdIstXSUHMRjyyDIqcjNQhEA1vDhqob3XKfWys"
+            },
+            "description": "Firma de autenticación"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/record_category_logic_app"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operación exitosa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Result": {
+                      "type": "string",
+                      "example": "Success"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida"
+          },
+          "401": {
+            "description": "No autorizado"
+          },
+          "500": {
+            "description": "Error interno del servidor"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "record_category_logic_app": {
+        "type": "object",
+        "required": [
+          "Name",
+          "Description",
+          "Type",
+          "UserId"
+        ],
+        "properties": {
+          "Name": {
+            "type": "string",
+            "description": "El nombre de la categoría a registrar.",
+            "example": "Comida"
+          },
+          "Description": {
+            "type": "string",
+            "description": "Una descripción breve de la categoría que se va a registrar",
+            "example": "Gastos de alimentación"
+          },
+          "Type": {
+            "type": "string",
+            "description": "El tipo de la categoría a registrar, puede ser de tipo Ingreso o Gasto",
+            "example": "Gasto"
+          },
+          "UserId": {
+            "type": "string",
+            "description": "El identificador del usuario que registra la categoría",
+            "example": "1"
+          }
+        }
+      }
+    }
+  }
+}

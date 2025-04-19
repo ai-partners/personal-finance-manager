@@ -1,14 +1,12 @@
 import os
-import requests
+import jsonref
 from typing import Set
 from dotenv import load_dotenv
 
+from azure.ai.projects.models import OpenApiTool, OpenApiAnonymousAuthDetails
 from azure.ai.projects import AIProjectClient
-from azure.ai.projects.models import ToolSet, FunctionTool
 from azure.identity import DefaultAzureCredential
 
-# Import AzureLogicAppTool and the function factory from user_logic_apps
-from agent_functions import AzureLogicAppTool, create_record_account_function, create_record_category_function
 
 def main():
     
@@ -21,37 +19,30 @@ def main():
     )
  
     # 2. Add functions to the agent
-    # Extract subscription and resource group from the project scope
-    subscription_id = project_client.scope["subscription_id"]
-    resource_group = project_client.scope["resource_group_name"]
+    auth = OpenApiAnonymousAuthDetails()
 
-    # Define "record_account_func"
-    logic_app_name = "record_account_logic_app"
-    trigger_name = "Trigger1"
-    logic_app_tool = AzureLogicAppTool(subscription_id, resource_group)
-    logic_app_tool.register_logic_app(logic_app_name, trigger_name)
-    print(f"Registered logic app '{logic_app_name}' with trigger '{trigger_name}'.")
-    record_account_func = create_record_account_function(logic_app_tool, logic_app_name)
+    # Add record_account_logic_app openapi definition
+    with open("./record_account_logic_app.json", "r") as f:
+        openapi_record_account_logic_app = jsonref.loads(f.read())
 
-    # Define "record_category_func"
-    logic_app_name = "record_category_logic_app"
-    trigger_name = "Trigger1"
-    logic_app_tool = AzureLogicAppTool(subscription_id, resource_group)
-    logic_app_tool.register_logic_app(logic_app_name, trigger_name)
-    print(f"Registered logic app '{logic_app_name}' with trigger '{trigger_name}'.")
-    record_category_func = create_record_category_function(logic_app_tool, logic_app_name)
+    openapi_tool = OpenApiTool(
+    name="record_account_logic_app",
+    spec=openapi_record_account_logic_app,
+    description="Registra un medio transaccional en la tabla de cuentas",
+    auth=auth,
+    default_parameters=["format"],
+    )
 
-    # Define functions to use
-    functions_to_use: Set = {
-        record_account_func,
-        record_category_func,
-    }
+    # Add record_category_logic_app openapi definition
+    with open("./record_category_logic_app.json", "r") as f:
+        openapi_record_category_logic_app = jsonref.loads(f.read())
 
-    # Create a FunctionTool instance with the functions
-    functions = FunctionTool(functions_to_use)
-    toolset = ToolSet()
-    toolset.add(functions)
-    project_client.agents.enable_auto_function_calls(toolset=toolset) 
+    openapi_tool.add_definition(
+    name="record_category_logic_app",
+    spec=openapi_record_category_logic_app,
+    description="Registra una categoría de ingreso o gasto en la tabla de categorías",
+    auth=auth,
+    )
     
     # 3. Define agent instructions
     agent_instructions="""
@@ -106,7 +97,7 @@ def main():
             model=os.environ["MODEL_DEPLOYMENT_NAME"],
             name="Agent1-Onboarding",
             instructions=agent_instructions,
-            toolset=toolset,
+            tools=openapi_tool.definitions,
         )
         print(f"Created agent, ID: {agent.id}")
         

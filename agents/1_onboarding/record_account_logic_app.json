@@ -1,0 +1,135 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "record_account_logic_app",
+    "description": "Logic App qu permite la creación de cuentas en la base de datos",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://prod-57.eastus2.logic.azure.com:443"
+    }
+  ],
+  "paths": {
+    "/workflows/cf619d77acf44b7d892134085ca1f3f6/triggers/Trigger1/paths/invoke": {
+      "post": {
+        "description": "Registra un medio transaccional en la tabla de cuentas",
+        "operationId": "record_account_logic_app",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "2016-10-01"
+            },
+            "description": "Versión de la API"
+          },
+          {
+            "name": "sp",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "/triggers/Trigger1/run"
+            },
+            "description": "Desencadenador"
+          },
+          {
+            "name": "sv",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "1.0"
+            },
+            "description": "Versión del servicio"
+          },
+          {
+            "name": "sig",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "7Qj71eFZd9uPF6F3N3kWQaHfORBMpMGRg3HmEjs9BiI"
+            },
+            "description": "Firma de autenticación"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/record_account_logic_app"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operación exitosa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Result": {
+                      "type": "string",
+                      "example": "Success"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida"
+          },
+          "401": {
+            "description": "No autorizado"
+          },
+          "500": {
+            "description": "Error interno del servidor"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "record_account_logic_app": {
+        "type": "object",
+        "required": [
+          "Name",
+          "Description",
+          "Type",
+          "UserId"
+        ],
+        "properties": {
+          "Name": {
+            "type": "string",
+            "description": " El nombre de la cuenta a registrar",
+            "example": "Davivienda"
+          },
+          "Description": {
+            "type": "string",
+            "description": "Una descripción breve de la cuenta que se va a registrar",
+            "example": "Cuenta de ahorros, cuenta de nómina"
+          },
+          "Type": {
+            "type": "string",
+            "description": "El tipo de la cuenta a registrar, puede ser de tipo Activo o Pasivo",
+            "example": "Activo"
+          },
+          "UserId": {
+            "type": "string",
+            "description": "El identificador del usuario que registra la cuenta",
+            "example": "1"
+          }
+        }
+      }
+    }
+  }
+}
