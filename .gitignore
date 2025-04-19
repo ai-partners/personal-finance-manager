@@ -1,0 +1,44 @@
+# Ignore node_modules folder
+node_modules/
+
+# Ignore Python virtual environments
+venv/
+.env/
+
+# Ignore compiled Python files
+*.pyc
+__pycache__/
+
+# Ignore IDE-specific files
+.vscode/
+.idea/
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore logs and temporary files
+*.log
+*.tmp
+
+# Ignore build artifacts
+dist/
+build/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Ignore environment files
+.env
+.env.local
+
+# Ignore coverage reports
+coverage/
+*.coverage
+.nyc_output/
+
+# Ignore dependency lock files (if not versioned)
+package-lock.json
+yarn.lock
+poetry.lock
