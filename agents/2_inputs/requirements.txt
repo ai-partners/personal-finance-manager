@@ -1,4 +1,4 @@
-semantic-kernel==1.28.1
-pydantic==2.11.3
-nest-asyncio==1.6.0
-azure-identity==1.21.0
+azure-ai-projects
+python-dotenv
+azure-identity
+pytest
