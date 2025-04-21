@@ -2,3 +2,7 @@ azure-ai-projects
 python-dotenv
 azure-identity
 pytest
+pyodbc==5.2.0
+SQLAlchemy==2.0.40
+azure-mgmt-logic
+jsonref

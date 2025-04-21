@@ -1,0 +1,156 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "fetch_data_using_sql_query",
+        "description": "Azure Logic App that fetches data using SQL queries.",
+        "version": "1.0.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://prod-03.eastus2.logic.azure.com/workflows/60315ae99cbd4a3bbd5f150526078a1b/triggers"
+        }
+    ],
+    "paths": {
+        "/When_a_HTTP_request_is_received/paths/invoke": {
+            "post": {
+                "summary": "Fetch Data Using SQL Query",
+                "description": "Trigger a run of the logic app to fetch data using SQL query.",
+                "operationId": "When_a_HTTP_request_is_received-invoke",
+                "parameters": [
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "description": "The service API version.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "2016-10-01"
+                        }
+                    },
+                    {
+                        "name": "sp",
+                        "in": "query",
+                        "description": "The permissions; generally 'read' or 'write'.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "/triggers/When_a_HTTP_request_is_received/run"
+                        }
+                    },
+                    {
+                        "name": "sv",
+                        "in": "query",
+                        "description": "The version number of the query parameters.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "1.0"
+                        }
+                    },
+                    {
+                        "name": "sig",
+                        "in": "query",
+                        "description": "The SHA 256 hash of the entire request URI with an internal key.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "krZ_nBCXkYg7xPQOLZG68FuwOnf3HIHQhl0D11W6cck"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Request parameters including the user query",
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SqlQueryRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation returning query results",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - invalid query",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - authentication required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "SqlQueryRequest": {
+                "type": "object",
+                "properties": {
+                    "user_query": {
+                        "type": "string",
+                        "description": "The user query to be executed or processed"
+                    }
+                },
+                "required": ["user_query"]
+            },
+            "ErrorResponse": {
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "description": "Error code"
+                            },
+                            "message": {
+                                "type": "string",
+                                "description": "Error message"
+                            },
+                            "details": {
+                                "type": "string",
+                                "description": "Additional error details when available",
+                                "nullable": true
+                            }
+                        },
+                        "required": ["code", "message"]
+                    }
+                },
+                "required": ["error"]
+            }
+        }
+    }
+}

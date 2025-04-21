@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import logging
 import pyodbc
 from typing import Any, Callable, Set, Dict, List, Optional
+import json
 
 # Load environment variables from .env file
 load_dotenv()
@@ -13,15 +14,28 @@ def get_db_connection():
     return pyodbc.connect(conn_str)
 
 # Database interaction implementations
-def get_user_accounts(user_id: int) -> List[Dict[str, Any]]:
+def get_user_accounts(user_id: int) -> str:
+    """
+    Retrieves a list of accounts for the user.
+    :param user_id: The ID of the user.
+    :return: A list of accounts associated with the user.
+    :rtype: str
+    """
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT Id, Name, Type FROM Accounts WHERE UserId = ?", user_id)
     accounts = [{"id": row[0], "name": row[1], "type": row[2]} for row in cursor.fetchall()]
     conn.close()
-    return accounts
+    return json.dumps({"accounts": accounts})
 
-def get_transaction_categories(user_id, type=None):
+def get_transaction_categories(user_id: int, type=None) -> str:
+    """
+    Retrieves a list of transaction categories for the user.
+    :param user_id: The ID of the user.
+    :param type: The type of categories to retrieve (e.g., 'income', 'expense').
+    :return: A list of transaction categories associated with the user.
+    :rtype: str
+    """
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -33,10 +47,10 @@ def get_transaction_categories(user_id, type=None):
         
     categories = [{"id": row[0], "name": row[1], "description": row[2]} for row in cursor.fetchall()]
     conn.close()
-    return categories
+    return json.dumps({"categories": categories})
 
 # Statically defined user functions for fast reference
 user_functions: Set[Callable[..., Any]] = {
     get_user_accounts,
-    get_transaction_categories
+    get_transaction_categories,
 }

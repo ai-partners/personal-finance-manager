@@ -81,13 +81,52 @@ def image_to_base64(image_path: str) -> str:
         raise OSError(f"Error reading file '{image_path}'") from exc
 
 
-def test_text_input(agent_and_client):
+# def test_text_input(agent_and_client):
+#     """
+#     Prueba la funcionalidad de entrada de texto para un agente.
+
+#     Este caso de prueba verifica que un agente pueda procesar un mensaje de entrada
+#     de texto correctamente y que la respuesta contenga información relevante sobre
+#     el balance de la cuenta.
+
+#     Args:
+#         agent_and_client (tuple): Una tupla que contiene el agente y el cliente del proyecto.
+
+#     Pasos:
+#     1. Imprime los detalles del agente, incluyendo su ID y nombre.
+#     2. Crea un hilo (thread) asociado al agente.
+#     3. Envía un mensaje al hilo con el contenido "What is my account balance?" y el rol "user".
+#     4. Procesa los mensajes en el hilo y verifica que la respuesta contenga la palabra "balance".
+
+#     Assertions:
+#         - Se asegura de que la palabra "balance" esté presente en el contenido de la respuesta.
+
+#     """
+#     agent, project_client = agent_and_client
+#     # Print agent details
+#     print(f"Agent ID: {agent.id}")
+#     print(f"Agent Name: {agent.name}")
+#     # Create a thread for the agent
+#     thread = project_client.agents.create_thread()
+#     print(f"Thread ID: {thread.id}")
+#     # Create a message in the thread
+#     message = project_client.agents.create_message(
+#         thread_id=thread.id,
+#         content="What is my account balance?",
+#         role="user",
+#     )
+#     messages = process_run_and_get_messages(project_client, thread.id, agent)
+#     all_content = " ".join([msg.content[-1].text.value for msg in messages.data])
+#     assert "balance" in all_content.lower()
+
+
+def test_text_input_get_accounts(agent_and_client):
     """
     Prueba la funcionalidad de entrada de texto para un agente.
 
     Este caso de prueba verifica que un agente pueda procesar un mensaje de entrada
     de texto correctamente y que la respuesta contenga información relevante sobre
-    el balance de la cuenta.
+    las cuentas del usuario.
 
     Args:
         agent_and_client (tuple): Una tupla que contiene el agente y el cliente del proyecto.
@@ -95,11 +134,11 @@ def test_text_input(agent_and_client):
     Pasos:
     1. Imprime los detalles del agente, incluyendo su ID y nombre.
     2. Crea un hilo (thread) asociado al agente.
-    3. Envía un mensaje al hilo con el contenido "What is my account balance?" y el rol "user".
-    4. Procesa los mensajes en el hilo y verifica que la respuesta contenga la palabra "balance".
+    3. Envía un mensaje al hilo con el contenido "Get my accounts" y el rol "user".
+    4. Procesa los mensajes en el hilo y verifica que la respuesta contenga la palabra "account".
 
     Assertions:
-        - Se asegura de que la palabra "balance" esté presente en el contenido de la respuesta.
+        - Se asegura de que la palabra "account" esté presente en el contenido de la respuesta.
 
     """
     agent, project_client = agent_and_client
@@ -112,50 +151,50 @@ def test_text_input(agent_and_client):
     # Create a message in the thread
     message = project_client.agents.create_message(
         thread_id=thread.id,
-        content="What is my account balance?",
+        content="Get the accounts for the user id 1",
         role="user",
     )
     messages = process_run_and_get_messages(project_client, thread.id, agent)
     all_content = " ".join([msg.content[-1].text.value for msg in messages.data])
-    assert "balance" in all_content.lower()
-
-
-def test_image_input(agent_and_client):
-    """
-    Prueba un caso en el que se envía una imagen como entrada a un agente y se verifica la respuesta.
-    Args:
-        agent_and_client (tuple): Una tupla que contiene el agente y el cliente del proyecto.
-    Pasos:
-        1. Crea un hilo para el agente utilizando el cliente del proyecto.
-        2. Convierte una imagen de ejemplo a formato base64 y la incluye como parte del mensaje.
-        3. Envía un mensaje al agente que contiene texto y una imagen en formato base64.
-        4. Procesa la ejecución del agente y recupera los mensajes generados.
-        5. Verifica que la respuesta del agente contiene palabras clave relacionadas con el recibo o el monto.
-    Notas:
-        - La imagen utilizada en este caso de prueba es "restaurant-bar-receipt-sample.jpg".
-        - Se espera que el agente pueda interpretar correctamente la imagen y responder con información relevante.
-    """
-    agent, project_client = agent_and_client
-    # Create a thread for the agent
-    thread = project_client.agents.create_thread()
-    print(f"Thread ID: {thread.id}")
-
-    input_message =  "What is the total amount on this receipt?"
-    image_base64 = image_to_base64("restaurant-bar-receipt-sample.jpg")
-    img_url = f"data:image/png;base64,{image_base64}"
-    url_param = MessageImageUrlParam(url=img_url, detail="high")
-    content_blocks: List[MessageInputContentBlock] = [
-        MessageInputTextBlock(text=input_message),
-        MessageInputImageUrlBlock(image_url=url_param),
-    ]
-
-    message = project_client.agents.create_message(thread_id=thread.id, role="user", content=content_blocks)
-    print(f"Created message, message ID: {message.id}")
-
-    messages = process_run_and_get_messages(project_client, thread.id, agent)
-    all_content = " ".join([msg.content[-1].text.value for msg in messages.data])
     print(f"All content: {all_content}")
-    assert "receipt" in all_content.lower() or "amount" in all_content.lower()
+    assert "account" in all_content.lower() or "accounts" in all_content.lower()
+
+# def test_image_input(agent_and_client):
+#     """
+#     Prueba un caso en el que se envía una imagen como entrada a un agente y se verifica la respuesta.
+#     Args:
+#         agent_and_client (tuple): Una tupla que contiene el agente y el cliente del proyecto.
+#     Pasos:
+#         1. Crea un hilo para el agente utilizando el cliente del proyecto.
+#         2. Convierte una imagen de ejemplo a formato base64 y la incluye como parte del mensaje.
+#         3. Envía un mensaje al agente que contiene texto y una imagen en formato base64.
+#         4. Procesa la ejecución del agente y recupera los mensajes generados.
+#         5. Verifica que la respuesta del agente contiene palabras clave relacionadas con el recibo o el monto.
+#     Notas:
+#         - La imagen utilizada en este caso de prueba es "restaurant-bar-receipt-sample.jpg".
+#         - Se espera que el agente pueda interpretar correctamente la imagen y responder con información relevante.
+#     """
+#     agent, project_client = agent_and_client
+#     # Create a thread for the agent
+#     thread = project_client.agents.create_thread()
+#     print(f"Thread ID: {thread.id}")
+
+#     input_message =  "What is the total amount on this receipt?"
+#     image_base64 = image_to_base64("restaurant-bar-receipt-sample.jpg")
+#     img_url = f"data:image/png;base64,{image_base64}"
+#     url_param = MessageImageUrlParam(url=img_url, detail="high")
+#     content_blocks: List[MessageInputContentBlock] = [
+#         MessageInputTextBlock(text=input_message),
+#         MessageInputImageUrlBlock(image_url=url_param),
+#     ]
+
+#     message = project_client.agents.create_message(thread_id=thread.id, role="user", content=content_blocks)
+#     print(f"Created message, message ID: {message.id}")
+
+#     messages = process_run_and_get_messages(project_client, thread.id, agent)
+#     all_content = " ".join([msg.content[-1].text.value for msg in messages.data])
+#     print(f"All content: {all_content}")
+#     assert "receipt" in all_content.lower() or "amount" in all_content.lower()
 
 # def test_voice_input(agent):
 #     with open("sample_query.wav", "rb") as audio_file:

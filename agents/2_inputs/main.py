@@ -1,5 +1,4 @@
 import os
-import asyncio
 import logging
 from dotenv import load_dotenv
 from azure.ai.projects import AIProjectClient
@@ -8,7 +7,7 @@ from utilities import Utilities
 from azure.ai.projects.models import (
     Agent,
     AgentThread,
-    AsyncToolSet,
+    ToolSet,
     OpenApiTool,
     OpenApiAnonymousAuthDetails,
 )
@@ -32,7 +31,7 @@ TEMPERATURE = 0.1
 TOP_P = 0.1
 INSTRUCTIONS_FILE = "instructions/agent_instructions.txt"
 
-toolset = AsyncToolSet()
+toolset = ToolSet()  # Changed from AsyncToolSet to SyncToolSet
 utilities = Utilities()
 
 project_client = AIProjectClient.from_connection_string(
@@ -40,28 +39,36 @@ project_client = AIProjectClient.from_connection_string(
     conn_str=PROJECT_CONNECTION_STRING,
 )
 
-async def add_agent_tools() -> None:
+def add_agent_tools() -> None:
     """Add tools to the agent."""
     
-    # Add fetch_data_using_sql_query tool
     auth = OpenApiAnonymousAuthDetails()
-    # Load the OpenAPI specification for the tool
-    fetch_data_using_sql_query_spec = utilities.read_json_file("tools/fetch_data_using_sql_query.json")
-    # Create the OpenApiTool instance
-    fetch_data_using_sql_query = OpenApiTool(
+
+    # Add fetch_data_using_sql_query tool
+    fetch_data_using_sql_query_spec = utilities.read_json_file("openapi_fetch_data_using_sql_query.json")
+    openapi_tool = OpenApiTool(
         name="fetch_data_using_sql_query",
         description="Fetch data from the database using a SQL query.",
         auth=auth,
         spec=fetch_data_using_sql_query_spec
     )
-    # Add the tool to the toolset
-    toolset.add(fetch_data_using_sql_query)
+
+    # Add record_transaction tool
+    record_transaction_spec = utilities.read_json_file("openapi_record_transactions_logic_app.json")
+    openapi_tool.add_definition(
+        name="record_transaction",
+        description="Record a transaction in the Transactions table.",
+        auth=auth,
+        spec=record_transaction_spec
+    )
+
+    toolset.add(openapi_tool)
 
     # Add function tools (if any)
     # Example: toolset.add(FunctionTool(name="function_name", function=function))
     return
 
-async def initialize() -> tuple[Agent, AgentThread]:
+def initialize() -> tuple[Agent, AgentThread]:
     """Initialize the agent and its thread."""
 
     if not INSTRUCTIONS_FILE:
@@ -79,7 +86,7 @@ async def initialize() -> tuple[Agent, AgentThread]:
         
         print("Creating agent...")
         # Create the agent with the specified model and tools
-        agent = await project_client.agents.create_agent(
+        agent = project_client.agents.create_agent(
             model=MODEL_DEPLOYMENT_NAME,
             name=AGENT_NAME,
             instructions=instructions,
@@ -90,7 +97,7 @@ async def initialize() -> tuple[Agent, AgentThread]:
         print(f"Created agent, ID: {agent.id}")
 
         print("Creating thread...")
-        thread = await project_client.agents.create_thread()
+        thread = project_client.agents.create_thread()
         print(f"Created thread, ID: {thread.id}")
 
         return agent, thread
@@ -99,18 +106,18 @@ async def initialize() -> tuple[Agent, AgentThread]:
         logger.error("An error occurred initializing the agent: %s", str(e))
         logger.error("Please ensure you've enabled an instructions file.")
 
-async def cleanup(agent: Agent, thread: AgentThread) -> None:
+def cleanup(agent: Agent, thread: AgentThread) -> None:
     """Cleanup resources."""
     # Close the project client connection
-    await project_client.agents.delete_thread(thread.id)
-    await project_client.agents.delete_agent(agent.id)
-    await project_client.close()
+    project_client.agents.delete_thread(thread.id)
+    project_client.agents.delete_agent(agent.id)
+    project_client.close()
 
-async def post_message(thread_id: str, content: str, agent: Agent, thread: AgentThread) -> None:
+def post_message(thread_id: str, content: str, agent: Agent, thread: AgentThread) -> None:
     """Post a message to the Azure AI Agent Service."""
     try:
         # Create a new message in the thread
-        await project_client.agents.create_message(
+        project_client.agents.create_message(
             thread_id=thread_id,
             content=content,
             role="user",
@@ -125,17 +132,17 @@ async def post_message(thread_id: str, content: str, agent: Agent, thread: Agent
             top_p=TOP_P,
             instructions=agent.instructions,
         )
-        async with stream as s:
-            await s.until_done()
+        with stream as s:
+            s.until_done()
 
     except Exception as e:
         logging.error(f"An error occurred while posting a message: {e}")
 
-async def main() -> None:
+def main() -> None:
     """
     Example questions to ask the agent: Add an expense of $50 for groceries, from today.
     """
-    agent, thread = await initialize()
+    agent, thread = initialize()
     if not agent or not thread:
         print("Failed to initialize agent or thread.")
         print("Exiting...")
@@ -153,7 +160,7 @@ async def main() -> None:
         if cmd in {"exit", "save"}:
             break
 
-        await post_message(agent=agent, thread_id=thread.id, content=prompt, thread=thread)
+        post_message(agent=agent, thread_id=thread.id, content=prompt, thread=thread)
 
     if cmd == "save":
         print("The agent has not been deleted, so you can continue experimenting with it in the Azure AI Foundry.")
@@ -161,10 +168,10 @@ async def main() -> None:
             f"Navigate to https://ai.azure.com, select your project, then playgrounds, agents playgound, then select agent id: {agent.id}"
         )
     else:
-        await cleanup(agent, thread)
+        cleanup(agent, thread)
         print("The agent resources have been cleaned up.")
 
 if __name__ == "__main__":
-    print("Starting async program...")
-    asyncio.run(main())
+    print("Starting program...")
+    main()  # Direct call instead of asyncio.run()
     print("Program finished.")

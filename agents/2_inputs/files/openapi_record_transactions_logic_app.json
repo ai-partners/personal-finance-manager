@@ -1,0 +1,165 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "record_transactions_logic_app",
+    "description": "Azure Logic App that enables recording transactions in the database.",
+    "version": "1.0.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://prod-08.eastus2.logic.azure.com"
+    }
+  ],
+  "paths": {
+    "/workflows/55c5081cf0c04ae5b709709855856452/triggers/When_a_HTTP_request_is_received/paths/invoke": {
+      "post": {
+        "description": "Registers a transaction in the transactions table. A transaction is a record of a financial event, such as an expense or income. This API allows you to create a new transaction by providing the necessary details.",
+        "operationId": "When_a_HTTP_request_is_received-invoke",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "2016-10-01"
+            },
+            "description": "The service API version."
+          },
+          {
+            "name": "sp",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "/triggers/When_a_HTTP_request_is_received/run"
+            },
+            "description": "The permissions; generally 'read' or 'write'."
+          },
+          {
+            "name": "sv",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "1.0"
+            },
+            "description": "The version number of the query parameters."
+          },
+          {
+            "name": "sig",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "3MaSs18EAlaUxvjTLg8CxzBnwx8fXKwDETaHPMKyoQc"
+            },
+            "description": "The SHA 256 hash of the entire request URI with an internal key."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Result": {
+                      "type": "string",
+                      "example": "Success"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RecordTransactionRequest": {
+        "type": "object",
+        "required": [
+          "AccountId",
+          "Amount",
+          "Date",
+          "Description",
+          "Type",
+          "UserId"
+        ],
+        "properties": {
+          "AccountId": {
+            "type": "integer",
+            "description": "The ID of the account associated with the transaction. This is a foreign key reference to the Accounts table. The agent must search for the account ID in the database before creating a transaction. The value must be validated by the user.",
+            "example": 1
+          },
+          "Amount": {
+            "type": "number",
+            "format": "float",
+            "description": "The amount of the transaction. This can be a positive or negative value depending on the type of transaction. This value must be provided by the user.",
+            "example": 125.50
+          },
+          "AttachmentUrl": {
+            "type": "string",
+            "description": "URL to any attachment related to the transaction (optional). This only applies when attachments are added to the conversation.",
+            "example": "https://storage.example.com/receipts/receipt-123.jpg"
+          },
+          "CategoryId": {
+            "type": "integer",
+            "description": "The ID of the category for this transaction. This is a foreign key reference to the Categories table. The agent must search for the category ID in the database before creating a transaction. The value must be validated by the user.",
+            "example": 5
+          },
+          "Date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date and time when the transaction occurred. This value must be provided by the user.",
+            "example": "2025-04-20T14:30:00Z"
+          },
+          "Description": {
+            "type": "string",
+            "description": "A brief description of the transaction. This value must be provided by the user.",
+            "example": "Grocery shopping at Supermarket"
+          },
+          "Type": {
+            "type": "string",
+            "description": "The type of transaction (e.g., Income, Expense). The agent can infer the type based on the context of the conversation. This value must be provided by the user.",
+            "enum": [
+              "Income",
+              "Expense",
+              "Transfer",
+              "Investment"
+            ],
+            "example": "Expense"
+          },
+          "UserId": {
+            "type": "integer",
+            "description": "The ID of the user who owns this transaction. This is a foreign key reference to the Users table. The agent must search for the user ID in the database before creating a transaction. The value must be validated by the user.",
+            "example": 1
+          }
+        }
+      }
+    }
+  }
+}
