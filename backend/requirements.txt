@@ -1,2 +1,4 @@
-openai
-semantic-kernel~=1.21.3
+fastapi[standard]
+azure-identity
+python-dotenv
+semantic-kernel
