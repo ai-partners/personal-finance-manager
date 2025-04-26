@@ -1,0 +1,153 @@
+import os
+import datetime
+from dotenv import load_dotenv
+from azure.ai.projects.aio import AIProjectClient
+from azure.identity.aio import DefaultAzureCredential
+from semantic_kernel import Kernel
+from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
+from semantic_kernel.agents.strategies import KernelFunctionSelectionStrategy, KernelFunctionTerminationStrategy
+from semantic_kernel.agents import AgentGroupChat, AzureAIAgent, AzureAIAgentSettings
+from semantic_kernel.contents import ChatHistoryTruncationReducer, ChatMessageContent
+from semantic_kernel.functions import KernelFunctionFromPrompt
+import chainlit as cl
+
+#Load environment variables
+load_dotenv()
+
+AGENT1_NAME = os.getenv("AGENT1_NAME")
+AGENT1_ID = os.getenv("AGENT1_ID")
+
+AGENT2_NAME = os.getenv("AGENT2_NAME")
+AGENT2_ID = os.getenv("AGENT2_ID")
+
+PROJECT_CONNECTION_STRING = os.getenv("PROJECT_CONNECTION_STRING")
+MODEL_DEPLOYMENT_NAME = os.getenv("MODEL_DEPLOYMENT_NAME")
+
+TERMINATION_KEYWORD = "FINISHED"
+
+# Initialize the AIProjectClient
+project_client = AIProjectClient.from_connection_string(
+    credential=DefaultAzureCredential(),
+    conn_str=PROJECT_CONNECTION_STRING,
+)
+
+class KernelChatGroup:
+    
+    async def initialize_chat_group(self,)->AgentGroupChat:
+        print("Initializing kernel...")
+        # Instantiate client settings
+        ai_agent_settings = AzureAIAgentSettings()
+        
+        # Instantiate kernel
+        kernel = Kernel()
+        chat_completion_service = AzureChatCompletion(
+            service_id="open-ai-service"
+        )
+        kernel.add_service(chat_completion_service)
+        
+        # Configure the kernel
+        selection_function = self.selection_function()
+        termination_function = self.termination_function()
+        history_reducer = ChatHistoryTruncationReducer(target_count=10)
+        
+        # Initialize agent 1
+        print("Getting agent 1...")
+        agent1 = await self.initialize_agent(
+            kernel=kernel,
+            agent_id=AGENT1_ID,
+            )
+
+        # Initialize agent 2
+        print("Getting agent 2...")
+        agent2 = await self.initialize_agent(
+            kernel=kernel,
+            agent_id=AGENT2_ID,
+        )
+
+        # Create the AgentGroupChat with selection and termination strategies
+        print("Creating AgentGroupChat...")
+        chat = AgentGroupChat(
+            agents=[agent1, agent2],
+            selection_strategy=KernelFunctionSelectionStrategy(
+                initial_agent=agent1,
+                function=selection_function,
+                kernel=kernel,
+                result_parser=lambda result: str(result.value[0]).strip() if result.value[0] is not None else AGENT1_NAME,
+                history_variable_name="history",
+                history_reducer=history_reducer,
+            ),
+            termination_strategy=KernelFunctionTerminationStrategy(
+                agents=[agent1, agent2],
+                function=termination_function,
+                kernel=kernel,
+                result_parser=lambda result: TERMINATION_KEYWORD in str(result.value[0]).lower(),
+                history_variable_name="history",
+                maximum_iterations=1,
+                history_reducer=history_reducer,
+            ),
+        )
+        print("AgentGroupChat created.")
+        return chat
+
+    async def initialize_agent(self, kernel: Kernel, agent_id: str,) -> AzureAIAgent:
+        # Get the agent definition
+        agent_definition = await project_client.agents.get_agent(
+            agent_id=agent_id,
+        )
+
+        # Create the agent according to the obtained definition
+        agent = AzureAIAgent(
+            client=project_client,
+            definition=agent_definition,
+            kernel=kernel,
+        )
+        return agent
+    
+    def selection_function(self,)->KernelFunctionFromPrompt:
+        return KernelFunctionFromPrompt(
+            function_name="selection",
+            prompt=f"""
+            Examine the provided HISTORY and determine which participant should respond next.
+            Indicate only the name of the chosen participant without explanation.
+
+            Choose only one of the following agents:
+            - {AGENT1_NAME}: Creation of accounts and categories of income and expenses.
+            - {AGENT2_NAME}: Records financial movements and transactions.
+
+            Rules:
+                1. An agent must complete its objective before another agent can take the turn.
+                2. If an agent is in the middle of a process (creating accounts, categories, or movements), that same agent must continue.
+                3. Only when an agent explicitly indicates that it has finished its task, another agent can intervene.
+                4. If an agent mentions that it needs more information or is waiting for a user response, that same agent must continue.
+                5. If an agent uses phrases like "I need to complete," "let's continue with," "to finalize," it means it has not yet finished its task.
+                6. Only when an agent indicates "I have completed my part" or "successfully registered" or similar, consider switching agents.
+
+            HISTORY:
+            {{{{$history}}}}
+            """,
+            )
+    
+    def termination_function(self,)->KernelFunctionFromPrompt:
+        return KernelFunctionFromPrompt(
+            function_name="termination",
+            prompt=f"""
+            Examine the HISTORY and determine if the user's goal has been achieved.
+            - If the goal is satisfactory, respond with a single word without explanation: {TERMINATION_KEYWORD}.
+            - If specific suggestions are being provided, it is not satisfactory.
+            - If no correction is suggested, it is satisfactory.
+
+            HISTORY:
+            {{{{$history}}}}
+            """,
+            )
+
+    def context_assistant_message(self,) -> ChatMessageContent:
+        return ChatMessageContent(
+            content=f"""
+            CONTEXT: 
+            - The user ID I am talking to is: {cl.user_session.get("user").metadata["UserId"]}
+            - Today's date is: {datetime.datetime.now().strftime("%d-%b-%Y")}
+            """,
+            role="assistant"
+        )
+
