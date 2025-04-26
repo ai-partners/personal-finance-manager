@@ -1,4 +1,3 @@
-from semantic_kernel.contents import ChatMessageContent
 import chainlit as cl
 
 from utilities import Utilities
@@ -51,20 +50,31 @@ async def on_chat_start():
 
 @cl.on_message
 async def on_message(message: cl.Message):
-    
     chat = cl.user_session.get("chat")
     answer = cl.Message(content="")
-    assistant_message = kernel.context_assistant_message()
-    user_message = ChatMessageContent(
-        content=message.content,
-        role="user"
-    )
-    messages = [assistant_message, user_message]
 
-    await chat.add_chat_messages(messages)
+    # Add needed messages to the chat group
+    chat = await kernel.add_user_message_to_chat(chat=chat, message=message) 
+
+    # Invoke the chat group
     async for response in chat.invoke_stream():
         if response.content:
             answer.author=str(response.name)
             await answer.stream_token(str(response.content))
-        cl.user_session.set("chat", chat)
+
+    # Add host agent message to the agent chat group history
+    # It's not a default behavior of the ChatCompletionAgent
+    if answer.author == "HostAgent":
+        chat = await kernel.add_host_response_to_history(chat=chat, response=answer.content)
+
     await answer.send()
+
+"""
+# Enable only for testing or debugging purposes
+if __name__ == "__main__":
+    from chainlit.cli import run_chainlit
+    run_chainlit(__file__)
+
+# For running the app, use the command:
+# chainlit run main.py
+"""

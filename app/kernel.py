@@ -7,9 +7,13 @@ from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from semantic_kernel.agents.strategies import KernelFunctionSelectionStrategy, KernelFunctionTerminationStrategy
 from semantic_kernel.agents import AgentGroupChat, AzureAIAgent, AzureAIAgentSettings, ChatCompletionAgent
-from semantic_kernel.contents import ChatHistoryTruncationReducer, ChatMessageContent
+from semantic_kernel.contents import ChatHistoryTruncationReducer, ChatMessageContent, ChatHistory, ImageContent, TextContent
 from semantic_kernel.functions import KernelFunctionFromPrompt
 import chainlit as cl
+
+from utilities import Utilities
+
+utilities = Utilities()
 
 #Load environment variables
 load_dotenv()
@@ -54,14 +58,15 @@ class KernelChatGroup:
         host = ChatCompletionAgent(
             kernel=kernel, 
             name="HostAgent", 
-            instructions=""" \
+            instructions="""
             You are an agent that serves as a host in a group chat of agents. Your goal is to welcome the user to the personal finance manager, which can help them:
                 1. Create transactional accounts and income/expense categories
                 2. Create financial transactions or movements such as income and expenses
             Your goal is only to provide information about the application's context. If the user requests to perform any particular action, it will be the responsibility of the other agents in the group chat.
+            If the user makes a request that includes attached receipts or invoices, you must perform the image reading and then pass the data to the other agents.
             """,
         )
-
+        
         # Initialize agent 1
         print("Getting agent 1...")
         agent1 = await self.initialize_agent(
@@ -125,7 +130,7 @@ class KernelChatGroup:
             Choose only one of the following agents:
             - {AGENT1_NAME}: Creation of accounts and categories of income and expenses.
             - {AGENT2_NAME}: Records financial movements and transactions.
-            - HostAgent: For any other request that the previous agents cannot resolve.
+            - HostAgent: For any other request that the previous agents cannot resolve, for example read receipts or images.
 
             Rules:
                 1. An agent must complete its objective before another agent can take the turn.
@@ -165,3 +170,42 @@ class KernelChatGroup:
             role="assistant"
         )
 
+    async def add_user_message_to_chat(self, chat: AgentGroupChat, message: cl.Message) -> AgentGroupChat:
+        chat_messages = []
+
+        # If history reducer erase context message, add it again (11 = current target_count + 1 )
+        if len(chat.history.messages) % 11 == 0:
+            context_message = self.context_assistant_message()
+            chat_messages.append(context_message)
+        
+        # If message has images, add image to the message
+        images = [file for file in message.elements if "image" in file.mime]
+        if images:
+            user_message = ChatMessageContent(
+                role="user",
+                items=[
+                    TextContent(text=message.content),
+                    ImageContent(uri=utilities.upload_to_azure_blob(file_path=images[0].path, blob_name=images[0].name)),
+                ]
+                )
+        else:
+            user_message = ChatMessageContent(
+                role="user",
+                items=[
+                    TextContent(text=message.content),
+                ]
+                )
+        chat_messages.append(user_message)
+
+        await chat.add_chat_messages(chat_messages)
+
+        return chat
+    
+    async def add_host_response_to_history(self, chat: AgentGroupChat, response: str) -> AgentGroupChat:
+        host_response = ChatMessageContent(
+            role="assistant",
+            content=response,
+        )
+        chat.history.add_message(host_response)
+        
+        return chat
