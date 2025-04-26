@@ -1,0 +1,70 @@
+from semantic_kernel.contents import ChatMessageContent
+import chainlit as cl
+
+from utilities import Utilities
+from kernel import KernelChatGroup
+
+utilities = Utilities()
+kernel = KernelChatGroup()
+
+@cl.password_auth_callback
+def auth_callback(username: str, password: str):
+    identifier, metadata = utilities.authenticate_user(username, password)
+    if identifier :
+        return cl.User(
+                identifier=identifier, 
+                metadata=metadata
+                )
+    else:
+        return None 
+
+@cl.set_starters
+async def set_starters():
+    return [
+        cl.Starter(
+            label="Create an account",
+            message="I want to create an account",
+            icon="/public/wallet.svg",
+            ),
+
+        cl.Starter(
+            label="Create a category",
+            message="I want to create a category",
+            icon="/public/wallet.svg",
+            ),
+        cl.Starter(
+            label="Record a transaction",
+            message="I want to create a transaction",
+            icon="/public/wallet.svg",
+            ),
+        cl.Starter(
+            label="Expenses report",
+            message="I want to see a report of my current month expenses",
+            icon="/public/wallet.svg",
+            )
+        ]
+
+@cl.on_chat_start
+async def on_chat_start():
+    chat = await kernel.initialize_chat_group()
+    cl.user_session.set("chat", chat)
+
+@cl.on_message
+async def on_message(message: cl.Message):
+    
+    chat = cl.user_session.get("chat")
+    answer = cl.Message(content="")
+    assistant_message = kernel.context_assistant_message()
+    user_message = ChatMessageContent(
+        content=message.content,
+        role="user"
+    )
+    messages = [assistant_message, user_message]
+
+    await chat.add_chat_messages(messages)
+    async for response in chat.invoke_stream():
+        if response.content:
+            answer.author=str(response.name)
+            await answer.stream_token(str(response.content))
+        cl.user_session.set("chat", chat)
+    await answer.send()
