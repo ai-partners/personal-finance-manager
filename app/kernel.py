@@ -6,7 +6,7 @@ from azure.identity.aio import DefaultAzureCredential
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from semantic_kernel.agents.strategies import KernelFunctionSelectionStrategy, KernelFunctionTerminationStrategy
-from semantic_kernel.agents import AgentGroupChat, AzureAIAgent, AzureAIAgentSettings
+from semantic_kernel.agents import AgentGroupChat, AzureAIAgent, AzureAIAgentSettings, ChatCompletionAgent
 from semantic_kernel.contents import ChatHistoryTruncationReducer, ChatMessageContent
 from semantic_kernel.functions import KernelFunctionFromPrompt
 import chainlit as cl
@@ -50,6 +50,18 @@ class KernelChatGroup:
         termination_function = self.termination_function()
         history_reducer = ChatHistoryTruncationReducer(target_count=10)
         
+        # Create the agent using the kernel
+        host = ChatCompletionAgent(
+            kernel=kernel, 
+            name="HostAgent", 
+            instructions=""" \
+            You are an agent that serves as a host in a group chat of agents. Your goal is to welcome the user to the personal finance manager, which can help them:
+                1. Create transactional accounts and income/expense categories
+                2. Create financial transactions or movements such as income and expenses
+            Your goal is only to provide information about the application's context. If the user requests to perform any particular action, it will be the responsibility of the other agents in the group chat.
+            """,
+        )
+
         # Initialize agent 1
         print("Getting agent 1...")
         agent1 = await self.initialize_agent(
@@ -67,9 +79,9 @@ class KernelChatGroup:
         # Create the AgentGroupChat with selection and termination strategies
         print("Creating AgentGroupChat...")
         chat = AgentGroupChat(
-            agents=[agent1, agent2],
+            agents=[host, agent1, agent2],
             selection_strategy=KernelFunctionSelectionStrategy(
-                initial_agent=agent1,
+                initial_agent=host,
                 function=selection_function,
                 kernel=kernel,
                 result_parser=lambda result: str(result.value[0]).strip() if result.value[0] is not None else AGENT1_NAME,
@@ -77,7 +89,7 @@ class KernelChatGroup:
                 history_reducer=history_reducer,
             ),
             termination_strategy=KernelFunctionTerminationStrategy(
-                agents=[agent1, agent2],
+                agents=[host, agent1, agent2],
                 function=termination_function,
                 kernel=kernel,
                 result_parser=lambda result: TERMINATION_KEYWORD in str(result.value[0]).lower(),
@@ -113,6 +125,7 @@ class KernelChatGroup:
             Choose only one of the following agents:
             - {AGENT1_NAME}: Creation of accounts and categories of income and expenses.
             - {AGENT2_NAME}: Records financial movements and transactions.
+            - HostAgent: For any other request that the previous agents cannot resolve.
 
             Rules:
                 1. An agent must complete its objective before another agent can take the turn.
@@ -135,6 +148,7 @@ class KernelChatGroup:
             - If the goal is satisfactory, respond with a single word without explanation: {TERMINATION_KEYWORD}.
             - If specific suggestions are being provided, it is not satisfactory.
             - If no correction is suggested, it is satisfactory.
+            - If the user does not respond with the requested information or changes their mind, the turn should also be ended.
 
             HISTORY:
             {{{{$history}}}}
