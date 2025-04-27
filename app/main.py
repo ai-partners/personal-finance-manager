@@ -33,12 +33,12 @@ async def set_starters():
             ),
         cl.Starter(
             label="Record a transaction",
-            message="I want to create a transaction",
+            message="I want to create a transaction (I've already created a accounts and categories)",
             icon="/public/starters/create_transaction.svg",
             ),
         cl.Starter(
             label="Analyze my data",
-            message="I want to analyze my transactions",
+            message="I want to analyze my transactions of the last month",
             icon="/public/starters/analyze_data.svg",
             ),
         ]

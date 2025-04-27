@@ -111,7 +111,6 @@ class KernelChatGroup:
         chat = AgentGroupChat(
             agents=[host, agent1, agent2, agent3, vision],
             selection_strategy=KernelFunctionSelectionStrategy(
-                initial_agent=host,
                 function=selection_function,
                 kernel=kernel,
                 result_parser=lambda result: str(result.value[0]).strip() if result.value[0] is not None else HOST_AGENT_NAME,
@@ -156,17 +155,19 @@ class KernelChatGroup:
 
             - {AGENT1_NAME}: This agent is responsible for creating accounts and categories of income and expenses.
             - {AGENT2_NAME}: This agent records financial movements and transactions.
-            - {AGENT3_NAME}: This agent is responsible for analyzing the data of accounts, categories, and transactions made by the user.
+            - {AGENT3_NAME}: This agent is responsible for analyzing the transactions data made by the user.
             - VisionAgent: If the user provides an image, this agent will extract the relevant information from it.
             - {HOST_AGENT_NAME}: For any other information requests related to the personal finance app.
 
             Rules:
-            1. An agent must complete its objective before another can take the turn.
-            2. If an agent is in the middle of a process (creating accounts, categories, or movements), that same agent must continue.
-            3. Only when an agent explicitly states that it has finished its task may another agent intervene.
-            4. If an agent mentions that it needs more information to fulfill its objective, that same agent must continue.
-            5. If an agent uses phrases like "I need to complete," "let's continue with," or "to finalize," it means it has not yet finished its task.
-            6. Only when an agent states "I have completed my part" or "successfully registered," or similar phrases, consider switching agents.
+
+            When should the same agent continue?  
+            - If an agent is in the middle of a process (creating accounts, categories, or transactions).  
+            - If an agent is requesting more information from the user to complete the task.
+
+            When should a change of agent be considered?  
+            - When the agent indicates that they have completed their task or have provided the information requested by the user.  
+            - When the user indicates that they have changed their mind or want to perform a different task.
 
             HISTORY:
             {{{{$history}}}}
