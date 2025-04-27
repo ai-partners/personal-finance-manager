@@ -18,6 +18,9 @@ utilities = Utilities()
 #Load environment variables
 load_dotenv()
 
+HOST_AGENT_NAME = os.getenv("HOST_AGENT_NAME")
+HOST_AGENT_ID = os.getenv("HOST_AGENT_ID")
+
 AGENT1_NAME = os.getenv("AGENT1_NAME")
 AGENT1_ID = os.getenv("AGENT1_ID")
 
@@ -53,19 +56,13 @@ class KernelChatGroup:
         selection_function = self.selection_function()
         termination_function = self.termination_function()
         history_reducer = ChatHistoryTruncationReducer(target_count=10)
-        
-        # Create the agent using the kernel
-        host = ChatCompletionAgent(
-            kernel=kernel, 
-            name="HostAgent", 
-            instructions="""
-            You are an agent that serves as a host in a group chat of agents. Your goal is to welcome the user to the personal finance manager, which can help them:
-                1. Create transactional accounts and income/expense categories
-                2. Create financial transactions or movements such as income and expenses
-            Your goal is only to provide information about the application's context. If the user requests to perform any particular action, it will be the responsibility of the other agents in the group chat.
-            If the user makes a request that includes attached receipts or invoices, you must perform the image reading and then pass the data to the other agents.
-            """,
-        )
+
+        # Initialize host agent
+        print("Getting host agent...")
+        host = await self.initialize_agent(
+            kernel=kernel,
+            agent_id=HOST_AGENT_ID,
+            )
         
         # Initialize agent 1
         print("Getting agent 1...")
@@ -81,20 +78,38 @@ class KernelChatGroup:
             agent_id=AGENT2_ID,
         )
 
+        # Create the vision agent using the kernel
+        vision = ChatCompletionAgent(
+            kernel=kernel, 
+            name="VisionAgent", 
+            instructions="""
+            You are an agent specialized in reading receipts, invoices, or any proof of financial transactions provided through an image.
+            Your goal is to extract the relevant data from the document so that other agents can make use of the information.
+
+            You should focus on extracting the following information:
+            - Document date
+            - Description (e.g., restaurant receipt, parking ticket, clothing, footwear, etc.)
+            - Total amount
+
+            If any of the above data is not present, simply indicate that it was not identified in the document.
+            When you finish the extraction, inform the user that you have successfully completed the task and ask them to confirm that the information is correct so that another agent can take over and record the transaction.
+            """,
+        )
+
         # Create the AgentGroupChat with selection and termination strategies
         print("Creating AgentGroupChat...")
         chat = AgentGroupChat(
-            agents=[host, agent1, agent2],
+            agents=[host, agent1, agent2, vision],
             selection_strategy=KernelFunctionSelectionStrategy(
                 initial_agent=host,
                 function=selection_function,
                 kernel=kernel,
-                result_parser=lambda result: str(result.value[0]).strip() if result.value[0] is not None else AGENT1_NAME,
+                result_parser=lambda result: str(result.value[0]).strip() if result.value[0] is not None else HOST_AGENT_NAME,
                 history_variable_name="history",
                 history_reducer=history_reducer,
             ),
             termination_strategy=KernelFunctionTerminationStrategy(
-                agents=[host, agent1, agent2],
+                agents=[host, agent1, agent2, vision],
                 function=termination_function,
                 kernel=kernel,
                 result_parser=lambda result: TERMINATION_KEYWORD in str(result.value[0]).lower(),
@@ -125,20 +140,22 @@ class KernelChatGroup:
             function_name="selection",
             prompt=f"""
             Examine the provided HISTORY and determine which participant should respond next.
-            Indicate only the name of the chosen participant without explanation.
+            Indicate only the name of the chosen participant, without explanation.
 
             Choose only one of the following agents:
-            - {AGENT1_NAME}: Creation of accounts and categories of income and expenses.
-            - {AGENT2_NAME}: Records financial movements and transactions.
-            - HostAgent: For any other request that the previous agents cannot resolve, for example read receipts or images.
+
+            - {AGENT1_NAME}: This agent is responsible for creating accounts and categories of income and expenses.
+            - {AGENT2_NAME}: This agent records financial movements and transactions.
+            - VisionAgent: If the user provides an image, this agent will extract the relevant information from it.
+            - {HOST_AGENT_NAME}: For any other information requests related to the personal finance app.
 
             Rules:
-                1. An agent must complete its objective before another agent can take the turn.
-                2. If an agent is in the middle of a process (creating accounts, categories, or movements), that same agent must continue.
-                3. Only when an agent explicitly indicates that it has finished its task, another agent can intervene.
-                4. If an agent mentions that it needs more information or is waiting for a user response, that same agent must continue.
-                5. If an agent uses phrases like "I need to complete," "let's continue with," "to finalize," it means it has not yet finished its task.
-                6. Only when an agent indicates "I have completed my part" or "successfully registered" or similar, consider switching agents.
+            1. An agent must complete its objective before another can take the turn.
+            2. If an agent is in the middle of a process (creating accounts, categories, or movements), that same agent must continue.
+            3. Only when an agent explicitly states that it has finished its task may another agent intervene.
+            4. If an agent mentions that it needs more information to fulfill its objective, that same agent must continue.
+            5. If an agent uses phrases like "I need to complete," "let's continue with," or "to finalize," it means it has not yet finished its task.
+            6. Only when an agent states "I have completed my part" or "successfully registered," or similar phrases, consider switching agents.
 
             HISTORY:
             {{{{$history}}}}
@@ -201,7 +218,7 @@ class KernelChatGroup:
 
         return chat
     
-    async def add_host_response_to_history(self, chat: AgentGroupChat, response: str) -> AgentGroupChat:
+    async def add_chat_completion_agent_response_to_history(self, chat: AgentGroupChat, response: str) -> AgentGroupChat:
         host_response = ChatMessageContent(
             role="assistant",
             content=response,

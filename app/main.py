@@ -58,10 +58,10 @@ async def on_message(message: cl.Message):
             answer.author=str(response.name)
             await answer.stream_token(str(response.content))
 
-    # Add host agent message to the agent chat group history
+    # Add vision agent response to the agent chat group history
     # It's not a default behavior of the ChatCompletionAgent
-    if answer.author == "HostAgent":
-        chat = await kernel.add_host_response_to_history(chat=chat, response=answer.content)
+    if answer.author == "VisionAgent":
+        chat = await kernel.add_chat_completion_agent_response_to_history(chat=chat, response=answer.content)
 
     await answer.send()
 
