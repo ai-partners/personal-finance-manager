@@ -27,6 +27,9 @@ AGENT1_ID = os.getenv("AGENT1_ID")
 AGENT2_NAME = os.getenv("AGENT2_NAME")
 AGENT2_ID = os.getenv("AGENT2_ID")
 
+AGENT3_NAME = os.getenv("AGENT3_NAME")
+AGENT3_ID = os.getenv("AGENT3_ID")
+
 PROJECT_CONNECTION_STRING = os.getenv("PROJECT_CONNECTION_STRING")
 MODEL_DEPLOYMENT_NAME = os.getenv("MODEL_DEPLOYMENT_NAME")
 
@@ -78,6 +81,13 @@ class KernelChatGroup:
             agent_id=AGENT2_ID,
         )
 
+        # Initialize agent 3
+        print("Getting agent 3...")
+        agent3 = await self.initialize_agent(
+            kernel=kernel,
+            agent_id=AGENT3_ID,
+        )
+
         # Create the vision agent using the kernel
         vision = ChatCompletionAgent(
             kernel=kernel, 
@@ -99,7 +109,7 @@ class KernelChatGroup:
         # Create the AgentGroupChat with selection and termination strategies
         print("Creating AgentGroupChat...")
         chat = AgentGroupChat(
-            agents=[host, agent1, agent2, vision],
+            agents=[host, agent1, agent2, agent3, vision],
             selection_strategy=KernelFunctionSelectionStrategy(
                 initial_agent=host,
                 function=selection_function,
@@ -109,7 +119,7 @@ class KernelChatGroup:
                 history_reducer=history_reducer,
             ),
             termination_strategy=KernelFunctionTerminationStrategy(
-                agents=[host, agent1, agent2, vision],
+                agents=[host, agent1, agent2, agent3, vision],
                 function=termination_function,
                 kernel=kernel,
                 result_parser=lambda result: TERMINATION_KEYWORD in str(result.value[0]).lower(),
@@ -146,6 +156,7 @@ class KernelChatGroup:
 
             - {AGENT1_NAME}: This agent is responsible for creating accounts and categories of income and expenses.
             - {AGENT2_NAME}: This agent records financial movements and transactions.
+            - {AGENT3_NAME}: This agent is responsible for analyzing the data of accounts, categories, and transactions made by the user.
             - VisionAgent: If the user provides an image, this agent will extract the relevant information from it.
             - {HOST_AGENT_NAME}: For any other information requests related to the personal finance app.
 

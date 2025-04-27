@@ -36,7 +36,11 @@ async def set_starters():
             message="I want to create a transaction",
             icon="/public/starters/create_transaction.svg",
             ),
-
+        cl.Starter(
+            label="Analyze my data",
+            message="I want to analyze my transactions",
+            icon="/public/starters/analyze_data.svg",
+            ),
         ]
 
 @cl.on_chat_start
