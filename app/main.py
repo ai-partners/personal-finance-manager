@@ -53,11 +53,16 @@ async def on_message(message: cl.Message):
     chat = cl.user_session.get("chat")
     answer = cl.Message(content="")
 
+    temp_msg = cl.Message(content="Thinking...")
+    await temp_msg.send()
+
     # Add needed messages to the chat group
     chat = await kernel.add_user_message_to_chat(chat=chat, message=message) 
 
     # Invoke the chat group
     async for response in chat.invoke_stream():
+        if temp_msg:
+            await temp_msg.remove()
         if response.content:
             answer.author=str(response.name)
             await answer.stream_token(str(response.content))
