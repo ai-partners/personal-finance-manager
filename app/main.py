@@ -23,24 +23,20 @@ async def set_starters():
         cl.Starter(
             label="Create an account",
             message="I want to create an account",
-            icon="/public/wallet.svg",
+            icon="/public/starters/create_account.svg",
             ),
 
         cl.Starter(
             label="Create a category",
             message="I want to create a category",
-            icon="/public/wallet.svg",
+            icon="/public/starters/create_category.svg",
             ),
         cl.Starter(
             label="Record a transaction",
             message="I want to create a transaction",
-            icon="/public/wallet.svg",
+            icon="/public/starters/create_transaction.svg",
             ),
-        cl.Starter(
-            label="Expenses report",
-            message="I want to see a report of my current month expenses",
-            icon="/public/wallet.svg",
-            )
+
         ]
 
 @cl.on_chat_start
