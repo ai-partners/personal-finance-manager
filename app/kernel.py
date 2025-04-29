@@ -97,8 +97,9 @@ class KernelChatGroup:
             Your goal is to extract the relevant data from the document so that other agents can make use of the information.
 
             You should focus on extracting the following information:
-            - Document date
-            - Description (e.g., restaurant receipt, parking ticket, clothing, footwear, etc.)
+            - Date
+            - Category (e.g., restaurant receipt, parking ticket, clothing, footwear, etc.)
+            - Description (Generate a brief description based on the elements found in the receipt or invoice.)
             - Total amount
 
             If any of the above data is not present, simply indicate that it was not identified in the document.
@@ -210,11 +211,12 @@ class KernelChatGroup:
         # If message has images, add image to the message
         images = [file for file in message.elements if "image" in file.mime]
         if images:
+            uri = utilities.upload_to_azure_blob(file_path=images[0].path, blob_name=images[0].name)
             user_message = ChatMessageContent(
                 role="user",
                 items=[
-                    TextContent(text=message.content),
-                    ImageContent(uri=utilities.upload_to_azure_blob(file_path=images[0].path, blob_name=images[0].name)),
+                    TextContent(text=f"{message.content} (Image url: {uri})"),
+                    ImageContent(uri=uri),
                 ]
                 )
         else:
