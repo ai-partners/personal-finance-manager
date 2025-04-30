@@ -1,4 +1,0 @@
-fastapi[standard]
-azure-identity
-python-dotenv
-semantic-kernel
