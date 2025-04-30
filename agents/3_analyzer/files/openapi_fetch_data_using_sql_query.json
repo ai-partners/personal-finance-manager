@@ -1,21 +1,21 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "get_user_accounts",
-        "description": "Retrieves a list of accounts for the user.",
+        "title": "fetch_data_using_sql_query",
+        "description": "Azure Logic App that fetches data using SQL queries.",
         "version": "1.0.0.0"
     },
     "servers": [
         {
-            "url": "https://prod-06.eastus2.logic.azure.com/workflows/75a8695be7b649d7aa6fc22ef9696423/triggers"
+            "url": "https://prod-03.eastus2.logic.azure.com/workflows/60315ae99cbd4a3bbd5f150526078a1b/triggers"
         }
     ],
     "paths": {
         "/When_a_HTTP_request_is_received/paths/invoke": {
             "post": {
-                "summary": "Get User Accounts",
-                "description": "Retrieves a list of accounts for the user.",
-                "operationId": "GetUserAccounts",
+                "summary": "Fetch Data Using SQL Query",
+                "description": "Trigger a run of the logic app to fetch data using SQL query.",
+                "operationId": "When_a_HTTP_request_is_received-invoke",
                 "parameters": [
                     {
                         "name": "api-version",
@@ -54,49 +54,34 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "default": "BVOQhdXvB2mkAtp-R7gMvfFdeyivh7Fmu57rWK4PXjQ"
+                            "default": "krZ_nBCXkYg7xPQOLZG68FuwOnf3HIHQhl0D11W6cck"
                         }
                     }
                 ],
                 "requestBody": {
-                    "description": "Request parameters",
+                    "description": "Request parameters including the user query",
                     "required": false,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/UserAccountRequest"
+                                "$ref": "#/components/schemas/SqlQueryRequest"
                             }
                         }
                     }
                 },
                 "responses": {
                     "200": {
-                        "description": "Successful operation returning a list of accounts for the user",
+                        "description": "Successful operation returning query results",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/AccountsResponse"
-                                },
-                                "example": {
-                                    "accounts": [
-                                        {
-                                            "Id": 1,
-                                            "Name": "Checking Account",
-                                            "Type": "checking"
-                                        },
-                                        {
-                                            "Id": 2,
-                                            "Name": "Savings Account",
-                                            "Type": "savings"
-                                        }
-                                    ],
-                                    "count": 2
+                                    "type": "object"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Bad request - invalid or missing user_id",
+                        "description": "Bad request - invalid query",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -131,55 +116,15 @@
     },
     "components": {
         "schemas": {
-            "UserAccountRequest": {
+            "SqlQueryRequest": {
                 "type": "object",
                 "properties": {
-                    "user_id": {
+                    "user_query": {
                         "type": "string",
-                        "description": "The unique identifier for the user"
+                        "description": "The user query to be executed or processed"
                     }
                 },
-                "required": ["user_id"]
-            },
-            "Account": {
-                "type": "object",
-                "properties": {
-                    "Id": {
-                        "type": "integer",
-                        "format": "int32",
-                        "description": "The unique identifier for the account"
-                    },
-                    "Name": {
-                        "type": "string",
-                        "maxLength": 100,
-                        "description": "The name of the account"
-                    },
-                    "Type": {
-                        "type": "string",
-                        "maxLength": 50,
-                        "description": "The type of account (e.g., checking, savings, credit card)",
-                        "nullable": true
-                    }
-                },
-                "required": ["Id", "Name"]
-            },
-            "AccountsResponse": {
-                "type": "object",
-                "properties": {
-                    "accounts": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/Account"
-                        },
-                        "description": "List of user accounts"
-                    },
-                    "count": {
-                        "type": "integer",
-                        "format": "int32",
-                        "description": "Total number of accounts returned"
-                    }
-                },
-                "required": ["accounts", "count"]
+                "required": ["user_query"]
             },
             "ErrorResponse": {
                 "type": "object",
