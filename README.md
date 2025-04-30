@@ -47,7 +47,7 @@ We've built a **collaborative AI experience** where different expert agents work
 
 ## ⚙️ Architecture
 
-![architecture_diagram](https://azfunctionsstorage2025.blob.core.windows.net/files-upload-by-users/architecture-diagram.png)
+![architecture_diagram](https://azfunctionsstorage2025.blob.core.windows.net/files-upload-by-users/architecture-diagram-v1.png)
 ### 🖥️ Application Components
 
 - **🔗 Chainlit**: A web app with a user-friendly conversational interface.  
