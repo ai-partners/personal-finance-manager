@@ -3,7 +3,7 @@
 Ever dreamed of having your **own personal accountant** to manage your finances like a pro? This app makes it possible through a smart **Agentic AI solution** built around a **collaborative chat** with specialized agents. 🚀
 
 ---
-![banner](https://azfunctionsstorage2025.blob.core.windows.net/files-upload-by-users/banner.png)
+![banner](https://github.com/user-attachments/assets/aff6ed54-df13-450d-9220-91e0c9dfa3f8)
 
 ## 🧩 The Problem: Why is managing money so hard?
 
@@ -47,7 +47,8 @@ We've built a **collaborative AI experience** where different expert agents work
 
 ## ⚙️ Architecture
 
-![architecture_diagram](https://azfunctionsstorage2025.blob.core.windows.net/files-upload-by-users/architecture-diagram-v1.png)
+![architecture-diagram](https://github.com/user-attachments/assets/09403d2e-9cf1-4951-9655-fa052988f1d6)
+
 ### 🖥️ Application Components
 
 - **🔗 Chainlit**: A web app with a user-friendly conversational interface.  
